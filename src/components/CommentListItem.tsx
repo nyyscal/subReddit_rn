@@ -116,6 +116,7 @@ const CommentListItem = ({
           data={comment.replies}
           renderItem={({ item }) => (
             <CommentListItem
+              key={item.id}
               comment={item}
               depth={depth + 1}
               handleReplyButtonPressed={handleReplyButtonPressed}
