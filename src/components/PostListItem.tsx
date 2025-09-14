@@ -14,7 +14,7 @@ export default function PostListItem({ post, isDetailedPost }: PostListItemProps
   const shouldShowDescription = isDetailedPost || !post.image
   return (
     <Link href={`/post/${post.id}`}>
-      <View style={{ paddingHorizontal: 15, paddingVertical: 25, gap: 7, borderBottomColor: 'lightgrey', borderBottomWidth: 0.5, backgroundColor: 'white' }}>
+      <View style={{ paddingHorizontal: 15, paddingVertical: 10, gap: 7, borderBottomColor: 'lightgrey', borderBottomWidth: 0.5, backgroundColor: 'white' }}>
       {/* HEADER */}
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Image source={{ uri: post.group.image }} style={{ width: 20, height: 20, borderRadius: 10, marginRight: 5 }} />
