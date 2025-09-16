@@ -1,14 +1,22 @@
 import { useLocalSearchParams } from "expo-router";
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
 import posts from "../../../../assets/data/posts.json"
 import PostListItem from "../../../components/PostListItem";
 import Comments from "../../../../assets/data/comments.json"
 import CommentListItem from "../../../components/CommentListItem";
 import { useState, useRef, useCallback } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useQuery } from "@tanstack/react-query";
+import { fetchPostsById } from "../../../services/postServices";
 
 export default function DetailedPost(){
-  const {id} = useLocalSearchParams()
+  const {id} = useLocalSearchParams<{id: string}>()
+
+  const {data,error, isLoading} = useQuery({
+    queryKey:["posts",id],
+    queryFn: ()=> fetchPostsById(id),
+    staleTime:3000,
+  })
 
   const detailPost = posts.find((post)=> post.id === id)
 
@@ -27,10 +35,18 @@ export default function DetailedPost(){
     inputRef.current?.focus()
   },[])
 
-  if(!detailPost) {
-    return <Text>Post not found!</Text>
-  }
+  // if(!detailPost) {
+  //   return <Text>Post not found!</Text>
+  // }
   // console.log(detailPost)
+
+   if(isLoading){
+      return <ActivityIndicator size={24} color={"green"}/>
+    }
+  
+    if(error || !data){
+      return <Text>Error while fetching posts.</Text>
+    }
 
   return(
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding": undefined} 
@@ -42,7 +58,7 @@ export default function DetailedPost(){
       renderItem={({item})=>(
       <CommentListItem comment={item} depth={0} handleReplyButtonPressed={handleReplyButtonPressed}/>
       )}
-      ListHeaderComponent={<PostListItem post={detailPost} isDetailedPost/>}
+      ListHeaderComponent={<PostListItem post={data} isDetailedPost/>}
       />
       <View
         style={{

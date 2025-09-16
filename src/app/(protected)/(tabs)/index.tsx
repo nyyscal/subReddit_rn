@@ -4,6 +4,7 @@ import PostListItem from '../../../components/PostListItem';
 import { ActivityIndicator, FlatList, Text, View } from 'react-native';
 import { supabase } from '../../../lib/supabase';
 // import { Post } from '../../../types';
+import {fetchPosts} from "../../../services/postServices"
 import { Tables } from '../../../types/database.types';
 import { useQuery } from '@tanstack/react-query';
 
@@ -11,17 +12,6 @@ type PostWithGroupAndName = Tables<"posts"> & {
   user: Tables<"users">
   group:Tables<"groups">
 }
-
-  const fetchPosts = async()=>{
-    const {data,error} = await supabase.from("posts").select("*, group:groups(*),user:users!posts_user_id_fkey(*)")
-    
-    if(error){
-      console.log(error)
-      throw error
-    }else{
-      return data
-    }
-  }
 
 const HomeScreen = () => {
 
