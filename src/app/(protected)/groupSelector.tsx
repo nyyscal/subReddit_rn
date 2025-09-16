@@ -1,4 +1,4 @@
-import { FlatList, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import {AntDesign} from "@expo/vector-icons"
@@ -7,18 +7,36 @@ import groups from "../../../assets/data/groups.json"
 import { selectedGroupAtom } from '../../atoms'
 import { useSetAtom } from 'jotai'
 import { Group } from '../../types'
+import { useQuery } from '@tanstack/react-query'
+import { fetchGroups } from '../../services/groupServices'
 
 const GroupSelector = () => {
 
   const [searchValue,setSearchValue] = useState<string>("")
   const setGroup = useSetAtom(selectedGroupAtom)
-  const filteredGroups = groups.filter((group)=> group.name.toLocaleLowerCase().includes(searchValue.toLowerCase()))
-
+  
+  const {data,error,isLoading} = useQuery({
+    queryKey:["groups", {searchValue}],
+    queryFn:()=>fetchGroups(searchValue),
+    staleTime:3000,
+    placeholderData:(previousData) => previousData
+  })
+  
   const onGroupSelect = (group:Group) =>{
     setGroup(group)
     router.back()
   }
+  
+  if(isLoading){
+    return <ActivityIndicator size={24} color={"green"}/>
+  }
+  
+  if(error || !data){
+    return <Text>Error while fetching posts.</Text>
+  }
 
+  // const filteredGroups = data.filter((group)=> group.name.toLocaleLowerCase().includes(searchValue.toLowerCase()))
+  
   return (
     <SafeAreaView style={{marginHorizontal:10, flex:1}}>
       <View style={{flexDirection:"row", alignItems:"center"}}>
@@ -36,7 +54,7 @@ const GroupSelector = () => {
         )}
       </View>
 
-      <FlatList data={filteredGroups} renderItem={({item})=>(
+      <FlatList data={data} renderItem={({item})=>(
         <Pressable
         onPress={()=>onGroupSelect(item)}
          style={{flexDirection:'row', alignItems:"center", gap:5, marginBottom:20}}>
