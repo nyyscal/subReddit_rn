@@ -1,29 +1,82 @@
-import { View, Text, Pressable, StyleSheet, TextInput, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native'
+import { View, Text, Pressable, StyleSheet, TextInput, KeyboardAvoidingView, Platform, ScrollView, Image, Alert } from 'react-native'
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import {AntDesign} from "@expo/vector-icons"
 import {Link, router} from "expo-router"
 import { selectedGroupAtom } from '../../../atoms'
 import { useAtom } from 'jotai'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { supabase } from '../../../lib/supabase'
+import { TablesInsert } from '../../../types/database.types'
 
-const CreateScreen = () => {
-  const [title, setTitle] = useState<string>("")
-  const [body, setBody] = useState<string>("")
-  const [group, setGroup]= useAtom(selectedGroupAtom)
+type InsertPost = TablesInsert<'posts'>
 
-  const goBack =() =>{
+  const insertPost = async(post: InsertPost)=>{
+    {
+      //use supabase
+      const  {data,error} =await supabase.from("posts").insert(post).select().single()
+      if(error){
+        throw error
+      }else{
+        return data
+      }
+    }
+  }
+
+  
+  const CreateScreen = () => {
+    const [title, setTitle] = useState<string>("")
+    const [body, setBody] = useState<string>("")
+    const [group, setGroup]= useAtom(selectedGroupAtom)
+    
+    const queryClient = useQueryClient()
+
+   const goBack =() =>{
     setTitle("")
     setBody("")
     setGroup(null)
     router.back()
   }
+
+   const { mutate, isPending } = useMutation({
+  mutationFn: async () => {
+    if (!group) {
+      throw new Error("Please select a group.");
+    }
+    if (!title) {
+      throw new Error("Please select a title.");
+    }
+    if (!body) {
+      throw new Error("Please select a body.");
+    }
+
+    return await insertPost({
+      title,
+      description: body,
+      group_id: group.id,
+      user_id: "38c4cb7a-9012-414c-823d-5a72f1019fd3",
+    });
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["posts"] });
+    goBack();
+  },
+  onError: (error) => {
+    // console.error(error);
+    Alert.alert("Failed to insert post.",error.message);
+  },
+});
+
+
+
+ 
   return (
     <SafeAreaView style={{backgroundColor: "white", flex:1, paddingHorizontal:10}}>
       {/* Header */}
       <View style={{flexDirection:"row",alignItems:"center"}}>
         <AntDesign name='close' size={30} color={"black"} onPress={goBack}/>
-      <Pressable onPress={()=>console.log("Pressed!")} style={{ marginLeft:"auto"}}>
-        <Text style={styles.postText}>Post</Text>
+      <Pressable onPress={()=>mutate()} disabled={isPending} style={{ marginLeft:"auto"}}>
+        <Text style={styles.postText}>{isPending? "Posting...":"Post"}</Text>
       </Pressable>
       </View>
 

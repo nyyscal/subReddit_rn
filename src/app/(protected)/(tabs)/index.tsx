@@ -15,7 +15,7 @@ type PostWithGroupAndName = Tables<"posts"> & {
 
 const HomeScreen = () => {
 
-  const {data: posts, error, isLoading} = useQuery({
+  const {data: posts, error, isLoading, refetch, isRefetching} = useQuery({
     queryKey:["posts"],
     queryFn: () => fetchPosts()
   })
@@ -32,7 +32,7 @@ const HomeScreen = () => {
     <View>
    <FlatList 
    data={posts} 
-   renderItem={({item})=><PostListItem post={item}/>}
+   renderItem={({item})=><PostListItem post={item}/>} onRefresh={refetch} refreshing={isRefetching}
    />
     </View>
   )
