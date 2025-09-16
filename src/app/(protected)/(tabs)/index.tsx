@@ -14,8 +14,7 @@ type PostWithGroupAndName = Tables<"posts"> & {
 
   const fetchPosts = async()=>{
     const {data,error} = await supabase.from("posts").select("*, group:groups(*),user:users!posts_user_id_fkey(*)")
-    // console.log(error)
-    // console.log(JSON.stringify(data, null ,2))
+    
     if(error){
       console.log(error)
       throw error
