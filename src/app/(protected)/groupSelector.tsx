@@ -6,9 +6,11 @@ import { router } from 'expo-router'
 import groups from "../../../assets/data/groups.json"
 import { selectedGroupAtom } from '../../atoms'
 import { useSetAtom } from 'jotai'
-import { Group } from '../../types'
 import { useQuery } from '@tanstack/react-query'
 import { fetchGroups } from '../../services/groupServices'
+import { Tables } from '../../types/database.types'
+
+type Group = Tables<"groups">
 
 const GroupSelector = () => {
 
