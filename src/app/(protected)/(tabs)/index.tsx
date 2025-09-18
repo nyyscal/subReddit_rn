@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import PostListItem from '../../../components/PostListItem';
 // import posts from "../../../../assets/data/posts.json"
 import { ActivityIndicator, FlatList, Text, View } from 'react-native';
-import { supabase } from '../../../lib/supabase';
+import { supabase, useSupabase } from '../../../lib/supabase';
 // import { Post } from '../../../types';
 import {fetchPosts} from "../../../services/postServices"
 import { Tables } from '../../../types/database.types';
@@ -15,9 +15,11 @@ type PostWithGroupAndName = Tables<"posts"> & {
 
 const HomeScreen = () => {
 
+  const supabase = useSupabase()
+
   const {data: posts, error, isLoading, refetch, isRefetching} = useQuery({
     queryKey:["posts"],
-    queryFn: () => fetchPosts()
+    queryFn: () => fetchPosts(supabase)
   })
 
   if(isLoading){

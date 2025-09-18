@@ -6,12 +6,13 @@ import {Link, router} from "expo-router"
 import { selectedGroupAtom } from '../../../atoms'
 import { useAtom } from 'jotai'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '../../../lib/supabase'
-import { TablesInsert } from '../../../types/database.types'
+import { supabase, useSupabase } from '../../../lib/supabase'
+import { Database, TablesInsert } from '../../../types/database.types'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 type InsertPost = TablesInsert<'posts'>
 
-  const insertPost = async(post: InsertPost)=>{
+  const insertPost = async(post: InsertPost, supabase: SupabaseClient<Database>)=>{
     {
       //use supabase
       const  {data,error} =await supabase.from("posts").insert(post).select().single()
@@ -30,6 +31,8 @@ type InsertPost = TablesInsert<'posts'>
     const [group, setGroup]= useAtom(selectedGroupAtom)
     
     const queryClient = useQueryClient()
+
+    const supabase = useSupabase()
 
    const goBack =() =>{
     setTitle("")
@@ -54,8 +57,9 @@ type InsertPost = TablesInsert<'posts'>
       title,
       description: body,
       group_id: group.id,
-      user_id: "38c4cb7a-9012-414c-823d-5a72f1019fd3",
-    });
+    },
+  supabase
+);
   },
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ["posts"] });
