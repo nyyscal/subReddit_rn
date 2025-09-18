@@ -4,10 +4,14 @@ import { formatDistanceToNowStrict } from 'date-fns';
 import { Link } from 'expo-router';
 import { Tables } from '../types/database.types';
 import { Entypo } from '@expo/vector-icons';
+import { useQuery } from '@tanstack/react-query';
+import { fetchPostUpVotes } from '../services/postServices';
+import { useSupabase } from '../lib/supabase';
 
 type Post = Tables<"posts"> & {
   // user: Tables<"users">
-  group:Tables<"groups">
+  group:Tables<"groups">,
+  upvotes: {sum:number}[]
 }
 
 type PostListItemProps = {
@@ -15,9 +19,19 @@ type PostListItemProps = {
   isDetailedPost?: boolean;
 }
 
+
+
 export default function PostListItem({ post, isDetailedPost }: PostListItemProps) {
   const shouldShowImage = isDetailedPost || post.image;
   const shouldShowDescription = isDetailedPost || !post.image
+  const supabase = useSupabase()
+
+  const {isLoading,data} = useQuery({
+    queryKey:["posts",post.id,"upvotes"],
+    queryFn:()=>fetchPostUpVotes(post.id,supabase)
+  })
+  console.log(data)
+
   return (
     <Link href={`/post/${post.id}`} asChild>
       <Pressable style={{ paddingHorizontal: 15, paddingVertical: 10, gap: 7, borderBottomColor: 'lightgrey', borderBottomWidth: 0.5, backgroundColor: 'white' }}>
@@ -53,7 +67,7 @@ export default function PostListItem({ post, isDetailedPost }: PostListItemProps
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <View style={[{ flexDirection: 'row' }, styles.iconBox]}>
               <MaterialCommunityIcons name="arrow-up-bold-outline" size={19} color="black" />
-              <Text style={{ fontWeight: '500', marginLeft: 5, alignSelf: 'center' }}>{post.upvotes}</Text>
+              <Text style={{ fontWeight: '500', marginLeft: 5, alignSelf: 'center' }}>{post.upvotes[0].sum || 0}</Text>
               <View style={{ width: 1, backgroundColor: '#D4D4D4', height: 14, marginHorizontal: 7, alignSelf: 'center' }} />
               <MaterialCommunityIcons name="arrow-down-bold-outline" size={19} color="black" />
             </View>
