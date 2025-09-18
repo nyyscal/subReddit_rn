@@ -1,23 +1,36 @@
-import { useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
 import posts from "../../../../assets/data/posts.json"
 import PostListItem from "../../../components/PostListItem";
 import Comments from "../../../../assets/data/comments.json"
 import CommentListItem from "../../../components/CommentListItem";
 import { useState, useRef, useCallback } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useQuery } from "@tanstack/react-query";
-import { fetchPostsById } from "../../../services/postServices";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { deletePostById, fetchPostsById } from "../../../services/postServices";
 import { useSupabase } from "../../../lib/supabase";
 
 export default function DetailedPost(){
+  const router = useRouter()
   const supabase = useSupabase()
   const {id} = useLocalSearchParams<{id: string}>()
+  const queryClient = useQueryClient()
 
   const {data,error, isLoading} = useQuery({
     queryKey:["posts",id],
     queryFn: ()=> fetchPostsById(id,supabase),
     staleTime:3000,
+  })
+
+  const {mutate:remove} = useMutation({
+    mutationFn:()=>deletePostById(id,supabase),
+    onSuccess:()=>{
+      queryClient.invalidateQueries({queryKey:["posts"]})
+      router.back()
+    },
+    onError:()=>{
+      Alert.alert("Error",error?.message)
+    }
   })
 
   const detailPost = posts.find((post)=> post.id === id)

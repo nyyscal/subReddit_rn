@@ -3,6 +3,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { Link } from 'expo-router';
 import { Tables } from '../types/database.types';
+import { Entypo } from '@expo/vector-icons';
 
 type Post = Tables<"posts"> & {
   // user: Tables<"users">
