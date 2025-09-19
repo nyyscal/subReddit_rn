@@ -2,13 +2,17 @@ import { Image, Pressable, Text, View, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { Link } from 'expo-router';
-import { Tables } from '../types/database.types';
+import { Database, Tables } from '../types/database.types';
 import { Entypo } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 // import { fetchPostUpVotes } from '../services/postServices';
 import { useSupabase } from '../lib/supabase';
 import { createUpvote, selectMyVote } from '../services/upvoteServices';
 import { useSession } from '@clerk/clerk-expo';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { useEffect, useState } from 'react';
+import { downloadImage } from '../utils/supabaseImages';
+import SupabaseImage from './SupabaseImage';
 
 type Post = Tables<"posts"> & {
   // user: Tables<"users">
@@ -31,6 +35,7 @@ export default function PostListItem({ post, isDetailedPost }: PostListItemProps
   const queryClient = useQueryClient()
   const {session} = useSession()
 
+
   const {mutate:upvote} = useMutation({
     mutationFn:(value:1|-1)=>createUpvote(post.id,value,supabase),
     onSuccess:(data)=>{
@@ -38,6 +43,8 @@ export default function PostListItem({ post, isDetailedPost }: PostListItemProps
       queryClient.invalidateQueries({queryKey:["posts"]})
     }
   })
+
+ 
 
   const {data:myVote}= useQuery({
     queryKey:["posts",post.id,"my-vote"],
@@ -68,8 +75,8 @@ export default function PostListItem({ post, isDetailedPost }: PostListItemProps
         {/* CONTENT */}
         <Text style={{ fontWeight: 'bold', fontSize: 17, letterSpacing: 0.5 }}>{post.title}</Text>
         {shouldShowImage && post.image && (
-          <Image source={{ uri: post.image }} style={{ width: "100%", aspectRatio: 4 / 3, borderRadius: 15 }} />
-        )}
+          <SupabaseImage path={post.image} bucket='images' style={{width:"100%", aspectRatio:4/3, borderRadius:15}} />
+  )}
 
         {shouldShowDescription && post.description && (
           <Text numberOfLines={isDetailedPost ? undefined : 4}>

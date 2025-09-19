@@ -10,6 +10,7 @@ import { supabase, useSupabase } from '../../../lib/supabase'
 import { Database, TablesInsert } from '../../../types/database.types'
 import { SupabaseClient } from '@supabase/supabase-js'
 import * as ImagePicker from "expo-image-picker"
+import { uploadImage } from '../../../utils/supabaseImages'
 
 type InsertPost = TablesInsert<'posts'>
 
@@ -57,8 +58,10 @@ type InsertPost = TablesInsert<'posts'>
     }
   }
 
+
+
    const { mutate, isPending } = useMutation({
-  mutationFn: async () => {
+  mutationFn: async (image:string | undefined) => {
     if (!group) {
       throw new Error("Please select a group.");
     }
@@ -73,6 +76,7 @@ type InsertPost = TablesInsert<'posts'>
       title,
       description: body,
       group_id: group.id,
+      image,
     },
   supabase
 );
@@ -87,15 +91,17 @@ type InsertPost = TablesInsert<'posts'>
   },
 });
 
+const onPostClick = async()=>{
+  let imagePath = image ? await uploadImage(image,supabase) :undefined
+  mutate(imagePath)
+}
 
-
- 
   return (
     <SafeAreaView style={{backgroundColor: "white", flex:1, paddingHorizontal:10}}>
       {/* Header */}
       <View style={{flexDirection:"row",alignItems:"center"}}>
         <AntDesign name='close' size={30} color={"black"} onPress={goBack}/>
-      <Pressable onPress={()=>mutate()} disabled={isPending} style={{ marginLeft:"auto"}}>
+      <Pressable onPress={()=>onPostClick()} disabled={isPending} style={{ marginLeft:"auto"}}>
         <Text style={styles.postText}>{isPending? "Posting...":"Post"}</Text>
       </Pressable>
       </View>
