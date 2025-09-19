@@ -1,7 +1,7 @@
 import { View, Text, Pressable, StyleSheet, TextInput, KeyboardAvoidingView, Platform, ScrollView, Image, Alert } from 'react-native'
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import {AntDesign} from "@expo/vector-icons"
+import {AntDesign, Feather} from "@expo/vector-icons"
 import {Link, router} from "expo-router"
 import { selectedGroupAtom } from '../../../atoms'
 import { useAtom } from 'jotai'
@@ -9,6 +9,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase, useSupabase } from '../../../lib/supabase'
 import { Database, TablesInsert } from '../../../types/database.types'
 import { SupabaseClient } from '@supabase/supabase-js'
+import * as ImagePicker from "expo-image-picker"
 
 type InsertPost = TablesInsert<'posts'>
 
@@ -29,6 +30,7 @@ type InsertPost = TablesInsert<'posts'>
     const [title, setTitle] = useState<string>("")
     const [body, setBody] = useState<string>("")
     const [group, setGroup]= useAtom(selectedGroupAtom)
+    const [image,setImage] = useState<string | null>(null)
     
     const queryClient = useQueryClient()
 
@@ -39,6 +41,20 @@ type InsertPost = TablesInsert<'posts'>
     setBody("")
     setGroup(null)
     router.back()
+  }
+
+  const pickImage = async() =>{
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes:["images","videos"],
+      allowsEditing: true,
+      aspect:[4,3],
+      quality:0.8
+    })
+    console.log(result)
+
+    if(!result.canceled){
+      setImage(result.assets[0].uri)
+    }
   }
 
    const { mutate, isPending } = useMutation({
@@ -115,6 +131,21 @@ type InsertPost = TablesInsert<'posts'>
       onChangeText={(text)=>setTitle(text)} 
       multiline 
       scrollEnabled={false}/>
+      {image && 
+      <View style={{paddingBottom:20}}>
+        <AntDesign name='close' size={25} color={"white"} onPress={()=>setImage(null)} 
+        style={{
+          position:"absolute",
+          zIndex:1,
+          right:10,
+          top:10,
+          padding:5,
+          backgroundColor:"#00000090",
+          borderRadius:20
+        }}
+        />
+      <Image source={{uri:image}} style={{width:"100%", aspectRatio:1}}/>
+      </View>}
 
       <TextInput placeholder='body text [optional]' 
       value={body}      
@@ -123,6 +154,13 @@ type InsertPost = TablesInsert<'posts'>
       scrollEnabled={false}/>
 
         </ScrollView>
+        {/* Footer */}
+        <View style={{flexDirection:"row", gap:20, padding:10}}>
+          <Feather name='link' size={20} color={"black"}/>
+          <Feather name='image' size={20} color={"black"} onPress={pickImage}/>
+          <Feather name='youtube' size={20} color={"black"}/>
+          <Feather name='list' size={20} color={"black"}/>
+        </View>
        </KeyboardAvoidingView>
     </SafeAreaView>
   )
