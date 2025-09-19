@@ -21,6 +21,7 @@ const HomeScreen = () => {
     queryKey:["posts"],
     queryFn: () => fetchPosts(supabase)
   })
+  console.log(JSON.stringify(posts,null,2))
 
   if(isLoading){
     return <ActivityIndicator size={24} color={"green"}/>
