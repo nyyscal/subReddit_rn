@@ -1,79 +1,130 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
-import posts from "../../../../assets/data/posts.json"
-import PostListItem from "../../../components/PostListItem";
-import Comments from "../../../../assets/data/comments.json"
-import CommentListItem from "../../../components/CommentListItem";
 import { useState, useRef, useCallback } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  TextInput,
+  Pressable,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AntDesign, MaterialIcons, Entypo } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { deletePostById, fetchPostsById } from "../../../services/postServices";
+import { router, Stack, useLocalSearchParams } from "expo-router";
+
+import CommentListItem from "../../../components/CommentListItem";
+import PostListItem from "../../../components/PostListItem";
+import { deletePostById, fetchPostById } from "../../../services/postServices";
+import {
+  fetchComments,
+  insertComment,
+} from "../../../services/commentServices";
+
 import { useSupabase } from "../../../lib/supabase";
 
-export default function DetailedPost(){
-  const router = useRouter()
-  const supabase = useSupabase()
-  const {id} = useLocalSearchParams<{id: string}>()
-  const queryClient = useQueryClient()
+export default function DetailedPost() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [comment, setComment] = useState<string>("");
+  const [isInputFocused, setIsInputFocused] = useState<boolean>(false);
+  const [replyToId, setReplyToId] = useState<string | null>(null);
 
-  const {data,error, isLoading} = useQuery({
-    queryKey:["posts",id],
-    queryFn: ()=> fetchPostsById(id,supabase),
-    staleTime:3000,
-  })
+  const inputRef = useRef<TextInput | null>(null);
 
-  const {mutate:remove} = useMutation({
-    mutationFn:()=>deletePostById(id,supabase),
-    onSuccess:()=>{
-      queryClient.invalidateQueries({queryKey:["posts"]})
-      router.back()
+  const insets = useSafeAreaInsets();
+
+  const queryClient = useQueryClient();
+  const supabase = useSupabase();
+
+  const {
+    data: post,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["posts", id],
+    queryFn: () => fetchPostById(id, supabase),
+  });
+
+  const { data: comments } = useQuery({
+    queryKey: ["comments", { postId: id }],
+    queryFn: () => fetchComments(id, supabase),
+  });
+
+  const { mutate: remove } = useMutation({
+    mutationFn: () => deletePostById(id, supabase),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      router.back();
     },
-    onError:()=>{
-      Alert.alert("Error",error?.message)
-    }
-  })
+    onError: (error) => {
+      Alert.alert("Error", error.message);
+    },
+  });
 
-  const detailPost = posts.find((post)=> post.id === id)
+  const { mutate: createComment } = useMutation({
+    mutationFn: () =>
+      insertComment({ comment, post_id: id, parent_id: replyToId }, supabase),
+    onSuccess: (data) => {
+      setComment("");
+      setReplyToId(null);
+      queryClient.invalidateQueries({ queryKey: ["comments", { postId: id }] });
+      queryClient.invalidateQueries({
+        queryKey: ["comments", { parentId: replyToId }],
+      });
+    },
+  });
 
-  const postComment = Comments.filter((comment)=> comment.post_id === "post-1")
-  // console.log(postComment)
+  const handleReplyButtonPressed = useCallback((commentId: string) => {
+    setReplyToId(commentId);
+    inputRef.current?.focus();
+  }, []);
 
-  const insets = useSafeAreaInsets()
+  if (isLoading) {
+    return <ActivityIndicator />;
+  }
 
-  const [comment,setComment] = useState<string>("")
-  const [isInputFocused, setIsInputFocused] = useState<boolean>(false)
+  if (error || !post) {
+    return <Text>Post Not Found</Text>;
+  }
 
-  const inputRef = useRef<TextInput | null>(null)
-
-  const handleReplyButtonPressed = useCallback((commentId: string) =>{
-    console.log(commentId)
-    inputRef.current?.focus()
-  },[])
-
-  // if(!detailPost) {
-  //   return <Text>Post not found!</Text>
-  // }
-  // console.log(detailPost)
-
-   if(isLoading){
-      return <ActivityIndicator size={24} color={"green"}/>
-    }
-  
-    if(error || !data){
-      return <Text>Error while fetching posts.</Text>
-    }
-
-  return(
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding": undefined} 
-    style={{flex:1}}
-    keyboardVerticalOffset={insets.top + 10}
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={{ flex: 1 }}
+      keyboardVerticalOffset={insets.top + 10}
     >
-      <FlatList 
-      data={postComment} 
-      renderItem={({item})=>(
-      <CommentListItem comment={item} depth={0} handleReplyButtonPressed={handleReplyButtonPressed}/>
-      )}
-      ListHeaderComponent={<PostListItem post={data} isDetailedPost/>}
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <Entypo
+                onPress={() => remove()}
+                name="trash"
+                size={24}
+                color="white"
+              />
+
+              <AntDesign name="search1" size={24} color="white" />
+              <MaterialIcons name="sort" size={27} color="white" />
+              <Entypo name="dots-three-horizontal" size={24} color="white" />
+            </View>
+          ),
+          animation: "slide_from_bottom",
+        }}
+      />
+
+      <FlatList
+        data={comments}
+        renderItem={({ item }) => (
+          <CommentListItem
+            comment={item}
+            depth={0}
+            handleReplyButtonPressed={handleReplyButtonPressed}
+          />
+        )}
+        ListHeaderComponent={<PostListItem post={post} isDetailedPost />}
       />
       <View
         style={{
@@ -92,32 +143,40 @@ export default function DetailedPost(){
           elevation: 4,
         }}
       >
-        <TextInput 
-        placeholder="Join the conversation"
-        style={{backgroundColor:"#E4E4E4", padding:5, borderRadius:5}}
-        value={comment}
-        onChangeText={(text)=>setComment(text)}
-        multiline
-        onFocus={()=>setIsInputFocused(true)}
-        onBlur={()=>setIsInputFocused(false)}
-        ref={inputRef}
+        <TextInput
+          ref={inputRef}
+          placeholder="Join the conversation"
+          style={{ backgroundColor: "#E4E4E4", padding: 5, borderRadius: 5 }}
+          value={comment}
+          onChangeText={(text) => setComment(text)}
+          multiline
+          onFocus={() => setIsInputFocused(true)}
+          onBlur={() => setIsInputFocused(false)}
         />
-       {isInputFocused && <Pressable 
-       style={{
-        backgroundColor: "#0d469b", 
-        borderRadius:15, 
-        marginLeft:"auto", 
-        marginTop:15,
-        }}>
-          <Text style={{
-            color:"white", 
-            paddingVertical:5, 
-            paddingHorizontal:10, 
-            fontWeight:"bold"}}>
+        {isInputFocused && (
+          <Pressable
+            onPress={() => createComment()}
+            style={{
+              backgroundColor: "#0d469b",
+              borderRadius: 15,
+              marginLeft: "auto",
+              marginTop: 15,
+            }}
+          >
+            <Text
+              style={{
+                color: "white",
+                paddingVertical: 5,
+                paddingHorizontal: 10,
+                fontWeight: "bold",
+                fontSize: 13,
+              }}
+            >
               Reply
             </Text>
-        </Pressable>}
+          </Pressable>
+        )}
       </View>
     </KeyboardAvoidingView>
-  )
+  );
 }
